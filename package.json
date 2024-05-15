@@ -1,0 +1,28 @@
+{
+  "name": "vant4-vite-kid-share-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@types/node": "^20.12.8",
+    "pinia": "^2.1.7",
+    "postcss-px-to-viewport": "^1.1.1",
+    "vant": "^4.9.0",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "sass": "^1.76.0",
+    "typescript": "^5.2.2",
+    "unplugin-vue-define-options": "^1.4.4",
+    "vite": "^5.2.0",
+    "vite-plugin-vue-setup-extend": "^0.4.0",
+    "vue-tsc": "^2.0.6"
+  }
+}
