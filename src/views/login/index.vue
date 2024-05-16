@@ -1,21 +1,26 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { showNotify } from 'vant'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import useUserStore from '../../store/modules/user'
 
 let username = ref<string>('visitor')
 let password = ref<string>('111111')
+let $route = useRoute()
 let $router = useRouter()
+let useUser = useUserStore()
 
 const onSubmit = () => {
   console.log('submit', username, password)
 
   // fake account
   if (username.value === 'visitor' && password.value === '111111') {
+    useUser.login('visitor')
     showNotify({ type: 'success', message: 'Login Success' })
-
-    localStorage.setItem('token', 'visitor')
-    $router.push('/home')
+    //编程式导航跳转到展示数据首页
+    //判断登录的时候,路由路径当中是否有query参数，如果有就往query参数挑战，没有跳转到首页
+    let redirect: any = $route.query.redirect
+    $router.push({ path: redirect || '/' })
   } else {
     showNotify({ type: 'danger', message: '账户密码错误' })
   }
