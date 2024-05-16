@@ -17,9 +17,11 @@ let image_columns = image_num >= 3 ? 3 : image_num
 console.log(`Image: ${image_num} col: ${image_columns}`)
 
 // open image preview
-const openImagePreview = () => {
+const openImagePreview = (index: number) => {
+  console.log(`Image index: ${index}`)
   showImagePreview({
     images: props.images ? props.images : [], // write in this way to reslove type check warning.
+    startPosition: index,
     closeable: true,
   })
 }
@@ -43,10 +45,8 @@ const openImagePreview = () => {
 
       <!-- Content -->
       <div class="content">
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Quas,
-          doloremque.
-        </p>
+        <van-text-ellipsis content="Lorem ipsum dolor sit amet consectetur adipisicing elit. Quas, doloremque." :rows="3" :expand-text="'展开'" :collapse-text="'收起'"></van-text-ellipsis>
+        
         <!-- Images -->
         <van-grid
           square
@@ -57,11 +57,11 @@ const openImagePreview = () => {
           <van-grid-item v-for="(item, index) in images" :key="index">
             <van-image
               :src="item"
-              fit="cover"
-              width="6rem"
-              height="6rem"
+              fit="contain"
+              width="100%"
+              height="100%"
               position="center"
-              @click="openImagePreview"
+              @click="openImagePreview(index)"
               :preview-src="{ src: item }"
             />
           </van-grid-item>
@@ -109,6 +109,10 @@ const openImagePreview = () => {
       .p {
         justify-content: left;
       }
+      van-text-ellipsis {
+        justify-content: left;
+      }
+
     }
   }
 }

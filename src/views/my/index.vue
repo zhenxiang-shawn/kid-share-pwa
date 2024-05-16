@@ -1,7 +1,9 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import UserInfoBlock from '@/components/UserInfoBlock.vue';
+</script>
 
 <template>
-  <div>user</div>
+  <UserInfoBlock />
 </template>
 
 <style lang="scss" scoped></style>
