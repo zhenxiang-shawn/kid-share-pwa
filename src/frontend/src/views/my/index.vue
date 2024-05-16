@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import UserInfoBlock from '@/components/UserInfoBlock.vue';
+import UserInfoBlock from '../../components/UserInfoBlock.vue'
 </script>
 
 <template>

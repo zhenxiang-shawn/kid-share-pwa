@@ -1,7 +1,7 @@
 // 路由守卫:
 // 路由鉴权
 import useUserStore from '../store/modules/user'
-import router from '../router'
+import router from '.'
 import pinia from '../store'
 
 const userStore = useUserStore(pinia)
