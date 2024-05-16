@@ -5,7 +5,7 @@ import TimeLineItem from '../../components/TimeLineItem.vue'
 
 let loading = ref<boolean>(false)
 let finished = ref<boolean>(false)
-let container = ref()
+// let container = ref()
 const fake_images1 = [
   'https://images.unsplash.com/photo-1568572933382-74d440642117',
   'https://images.unsplash.com/photo-1534377125276-8d48c3f9c3d3',
@@ -15,7 +15,7 @@ const fake_images1 = [
   'https://images.unsplash.com/photo-1513089184088-a4b54380a0b5',
   'https://images.unsplash.com/photo-1519687367256-4f5f4c5e3c6e',
   'https://images.unsplash.com/photo-1504198247232-7af2c1e6e8f2',
-  'https://images.unsplash.com/photo-1518734712468-44c6f2a2c27b',
+  'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png',
 ]
 
 const fake_images2 = [

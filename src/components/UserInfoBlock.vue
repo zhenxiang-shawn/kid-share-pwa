@@ -1,15 +1,34 @@
-<script setup lang="ts" name="UserInfoBlock"></script>
+<script setup lang="ts" name="UserInfoBlock">
+import { showNotify } from 'vant'
+import useUserStore from '../store/modules/user'
+
+let useUser = useUserStore()
+const logout = () => {
+  // 需要向服务器发请求[退出登录接口]******
+
+  // 仓库当中关于用于相关的数据清空[token|username|avatar]
+  useUser.resetUserInfo()
+  window.location.reload() // TODO(dir to login page)
+  // notification
+  showNotify({ type: 'warning', message: '已登出' })
+}
+</script>
 
 <template>
   <div class="user-info-block">
     <!-- Personal Information -->
     <div class="user-info-area">
-      <van-image round fit="cover" src="https://img.yzcdn.cn/vant/cat.jpeg"   width="5rem"
-  height="5rem"></van-image>
-  <span>UserName</span>
+      <van-image
+        round
+        fit="cover"
+        src="https://img.yzcdn.cn/vant/cat.jpeg"
+        width="5rem"
+        height="5rem"
+      ></van-image>
+      <span>UserName</span>
     </div>
-      <!-- avator -->
-      <!-- user name -->
+    <!-- avator -->
+    <!-- user name -->
     <!-- Post Information -->
     <van-grid :column-num="3">
       <van-grid-item icon="star-o" text="收藏" />
@@ -20,9 +39,8 @@
     <van-cell-group>
       <van-cell title="消息通知" is-link />
       <van-cell title="用户反馈" is-link />
-      <van-cell title="设置" is-link />
+      <van-cell title="登出" @click="logout" />
     </van-cell-group>
-
   </div>
 </template>
 

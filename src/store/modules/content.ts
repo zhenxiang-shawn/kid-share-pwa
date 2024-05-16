@@ -1,6 +1,6 @@
 // 创建content 展示的小仓库
 import { defineStore } from 'pinia'
-import { ContentState } from './types/types'
+import type { ContentState } from './types/types'
 
 const useContentStore = defineStore('ContentStore', {
   state: (): ContentState => {
