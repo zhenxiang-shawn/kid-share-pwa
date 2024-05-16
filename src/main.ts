@@ -14,7 +14,10 @@ import router from './router'
 
 const app = createApp(App)
 
-app.use(router)
-app.use(Vant)
 app.use(pinia)
+app.use(router)
+//引入路由鉴权文件
+import './router/permission'
+app.use(Vant)
+
 app.mount('#app')
