@@ -13,3 +13,4 @@
 *.pid.new
 *.pid.swo
 node_modules
+.idea
