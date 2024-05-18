@@ -107,7 +107,7 @@ func main() {
 	// Serve uploaded images
 	r.Static("/uploads", imageUploadDir)
 
-	r.Run(":8080")
+	r.Run(":8818")
 }
 
 func loginHandler(c *gin.Context) {
@@ -124,12 +124,12 @@ func loginHandler(c *gin.Context) {
 	collection := mongoClient.Database("baby_diary").Collection("users")
 	err := collection.FindOne(context.TODO(), bson.M{"username": credentials.Username}).Decode(&user)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username1 or password"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password1"})
 		return
 	}
 
@@ -141,7 +141,40 @@ func loginHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
+func registerHandler(c *gin.Context) {
+	var newUser User
+	if err := c.BindJSON(&newUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
 
+	collection := mongoClient.Database("baby_diary").Collection("users")
+
+	// Check if username already exists
+	var existingUser User
+	err := collection.FindOne(context.TODO(), bson.M{"username": newUser.Username}).Decode(&existingUser)
+	if err == nil {
+		// User with this username already exists
+		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+		return
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.PasswordHash), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
+		return
+	}
+	newUser.PasswordHash = string(passwordHash)
+
+	_, err = collection.InsertOne(context.TODO(), newUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not register user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+}
+/*
 func registerHandler(c *gin.Context) {
 	var newUser User
 	if err := c.BindJSON(&newUser); err != nil {
@@ -165,7 +198,7 @@ func registerHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
-
+*/
 func createDiaryEntry(c *gin.Context) {
 	username := c.MustGet("username").(string)
 	var entry struct {
