@@ -66,10 +66,12 @@ const (
 	mongoURI       = "mongodb://localhost:27017/?connectTimeoutMS=10000"
 	redisAddr      = "localhost:6379"
 	imageUploadDir = "./uploads/"
+	bcryptCost     = 6
 )
 
 type User struct {
 	Username     string `json:"username" bson:"username" validate:"required"`
+ Password     string `json:"password" bson:"-"`
 	PasswordHash string `json:"-" bson:"password_hash"`
 	DisplayName  string `json:"display_name" bson:"display_name"`
 	Relation     string `json:"relation" bson:"relation"`
@@ -131,6 +133,7 @@ func loginHandler(c *gin.Context) {
 	fmt.Println("user:", user, "credential:", credentials)
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password)); err != nil {
+		fmt.Println("err:",err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password1"})
 		return
 	}
@@ -149,8 +152,9 @@ func registerHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
-	if newUser.PasswordHash == "" {
+	if newUser.Password == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Password cannot be empty"})
+		return
 	}
 
 	collection := mongoClient.Database("baby_diary").Collection("users")
@@ -164,7 +168,7 @@ func registerHandler(c *gin.Context) {
 		return
 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.PasswordHash), bcrypt.DefaultCost)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcryptCost)
 	fmt.Println("Checking password: ", passwordHash)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
