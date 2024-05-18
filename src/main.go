@@ -45,6 +45,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path/filepath"
 	"net/http"
 	"time"
 
@@ -81,7 +82,7 @@ type DiaryEntry struct {
 	ID        string    `json:"id" bson:"id"`
 	Username  string    `json:"username" bson:"username"`
 	Content   string    `json:"content" bson:"content"`
-	ImagePath string    `json:"image_path,omitempty" bson:"image_path,omitempty"`
+	ImagePaths []string    `json:"image_paths,omitempty" bson:"image_paths,omitempty"`
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
 }
 
@@ -95,10 +96,16 @@ func main() {
 	defer mongoClient.Disconnect(context.TODO())
 
 	// Initialize Redis
-	//redisClient = redis.NewClient(&redis.Options{
-	//	Addr: redisAddr,
-	//})
-	//defer redisClient.Close()
+	redisClient = redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+	})
+	defer redisClient.Close()
+	
+	// Test Redis Connection
+	_, err = redisClient.Ping(context.TODO()).Result()
+	if err != nil {
+		log.Fatalf("Could not connect to Redis: %v", err)
+	}
 
 	// Create Gin router
 	r := gin.Default()
@@ -209,7 +216,7 @@ func registerHandler(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 	}
-*/
+
 func createDiaryEntry(c *gin.Context) {
 	username := c.MustGet("username").(string)
 	var entry struct {
@@ -220,7 +227,143 @@ func createDiaryEntry(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("image")
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
+		return
+	}
+
+	files := form.File["images"]
+	if len(files) > 9 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Too many images, maximum is 9"})
+		return
+	}
+
+	imagePaths := []string{}
+	for _, file := range files {
+		imageID := uuid.New().String()
+		imagePath := filepath.Join(imageUploadDir, imageID+"-"+file.Filename)
+		if err := c.SaveUploadedFile(file, imagePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+			return
+		}
+		imagePaths = append(imagePaths, imagePath)
+	}
+
+	diaryEntry := DiaryEntry{
+		ID:         uuid.New().String(),
+		Username:   username,
+		Content:    entry.Content,
+		ImagePaths: imagePaths,
+		Timestamp:  time.Now(),
+	}
+
+	collection := mongoClient.Database("baby_diary").Collection("diary_entries")
+	_, err = collection.InsertOne(context.TODO(), diaryEntry)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
+}*/
+func createDiaryEntry(c *gin.Context) {
+    username := c.MustGet("username").(string)
+
+    // 判断 Content-Type 是否是 application/json
+    if c.ContentType() == "application/json" {
+        var entry struct {
+            Content string `json:"content"`
+        }
+        if err := c.BindJSON(&entry); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+            return
+        }
+
+        diaryEntry := DiaryEntry{
+            ID:        uuid.New().String(),
+            Username:  username,
+            Content:   entry.Content,
+            Timestamp: time.Now(),
+        }
+
+        collection := mongoClient.Database("baby_diary").Collection("diary_entries")
+        _, err := collection.InsertOne(context.TODO(), diaryEntry)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
+            return
+        }
+
+        c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
+    } else {
+        // 处理 multipart/form-data 请求
+        form, err := c.MultipartForm()
+        if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
+            return
+        }
+
+        files := form.File["images"]
+        if len(files) > 9 {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Too many images, maximum is 9"})
+            return
+        }
+
+        var entry struct {
+            Content string `json:"content"`
+        }
+        entry.Content = form.Value["content"][0]
+
+        imagePaths := []string{}
+        for _, file := range files {
+            imageID := uuid.New().String()
+            imagePath := filepath.Join(imageUploadDir, imageID+"-"+file.Filename)
+            if err := c.SaveUploadedFile(file, imagePath); err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+                return
+            }
+            imagePaths = append(imagePaths, imagePath)
+        }
+
+        diaryEntry := DiaryEntry{
+            ID:         uuid.New().String(),
+            Username:   username,
+            Content:    entry.Content,
+            ImagePaths: imagePaths,
+            Timestamp:  time.Now(),
+        }
+
+        collection := mongoClient.Database("baby_diary").Collection("diary_entries")
+        _, err = collection.InsertOne(context.TODO(), diaryEntry)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
+            return
+        }
+
+        c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
+    }
+}
+
+/*
+
+func createDiaryEntry(c *gin.Context) {
+	username := c.MustGet("username").(string)
+	var entry struct {
+		Content string `json:"content"`
+	}
+	if err := c.BindJSON(&entry); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
+		return
+	}
+
+
+
+	files := form.File["images"]
 	imagePath := ""
 	if err == nil {
 		imageID := uuid.New().String()
@@ -248,7 +391,7 @@ func createDiaryEntry(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
 }
-
+*/
 func getDiaryEntries(c *gin.Context) {
 	collection := mongoClient.Database("baby_diary").Collection("diary_entries")
 	cursor, err := collection.Find(context.TODO(), bson.M{})
@@ -268,6 +411,38 @@ func getDiaryEntries(c *gin.Context) {
 }
 
 func authMiddleware(c *gin.Context) {
+    token := c.GetHeader("Authorization")
+    if token == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided"})
+        c.Abort()
+        return
+    }
+
+    // 去掉 "Bearer " 前缀
+    if len(token) > 7 && token[:7] == "Bearer " {
+        token = token[7:]
+    } else {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
+        c.Abort()
+        return
+    }
+
+    username, err := validateToken(token)
+    if err != nil {
+        log.Printf("Token validation error: %v, username: %s", err, username)
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+        c.Abort()
+        return
+    }
+
+    log.Printf("Authenticated user %s with token %s", username, token)
+    c.Set("username", username)
+    c.Next()
+}
+
+
+/*
+func authMiddleware(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided"})
@@ -277,28 +452,43 @@ func authMiddleware(c *gin.Context) {
 
 	username, err := validateToken(token)
 	if err != nil {
+log.Printf("Token validation error: %v, username: %s", err, username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		c.Abort()
 		return
 	}
-
+log.Printf("Authenticated user %s with token %s", username, token)
 	c.Set("username", username)
 	c.Next()
 }
-
+*/
 func generateToken(username string) (string, error) {
-	token := uuid.New().String()
-	err := redisClient.Set(context.TODO(), token, username, 24*time.Hour).Err()
-	if err != nil {
-		return "", err
-	}
-	return token, nil
+    token := uuid.New().String()
+    err := redisClient.Set(context.TODO(), token, username, 24*time.Hour).Err()
+    if err != nil {
+        log.Printf("Failed to store token in Redis: %v", err)
+        return "", err
+    }
+    log.Printf("Stored token for user %s: %s", username, token)
+    return token, nil
 }
-
+/*
 func validateToken(token string) (string, error) {
 	username, err := redisClient.Get(context.TODO(), token).Result()
 	if err != nil {
 		return "", err
 	}
 	return username, nil
+}
+*/
+func validateToken(token string) (string, error) {
+    username, err := redisClient.Get(context.TODO(), token).Result()
+    if err == redis.Nil {
+        log.Printf("Token not found in Redis: %s", token)
+        return "", fmt.Errorf("token not found")
+    } else if err != nil {
+        log.Printf("Error retrieving token from Redis: %v", err)
+        return "", err
+    }
+    return username, nil
 }
