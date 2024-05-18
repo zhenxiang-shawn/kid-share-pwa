@@ -68,7 +68,7 @@ const (
 )
 
 type User struct {
-	Username     string `json:"username" bson:"username"`
+	Username     string `json:"username" bson:"username" validate:"required"`
 	PasswordHash string `json:"-" bson:"password_hash"`
 	DisplayName  string `json:"display_name" bson:"display_name"`
 	Relation     string `json:"relation" bson:"relation"`
@@ -112,8 +112,8 @@ func main() {
 
 func loginHandler(c *gin.Context) {
 	var credentials struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Username string `json:"username" validate:"required"`
+		Password string `json:"password" validate:"required"`
 	}
 	if err := c.BindJSON(&credentials); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -174,30 +174,31 @@ func registerHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
+
 /*
-func registerHandler(c *gin.Context) {
-	var newUser User
-	if err := c.BindJSON(&newUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
-		return
-	}
+	func registerHandler(c *gin.Context) {
+		var newUser User
+		if err := c.BindJSON(&newUser); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+			return
+		}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.PasswordHash), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
-		return
-	}
-	newUser.PasswordHash = string(passwordHash)
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.PasswordHash), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
+			return
+		}
+		newUser.PasswordHash = string(passwordHash)
 
-	collection := mongoClient.Database("baby_diary").Collection("users")
-	_, err = collection.InsertOne(context.TODO(), newUser)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not register user"})
-		return
-	}
+		collection := mongoClient.Database("baby_diary").Collection("users")
+		_, err = collection.InsertOne(context.TODO(), newUser)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not register user"})
+			return
+		}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
-}
+		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+	}
 */
 func createDiaryEntry(c *gin.Context) {
 	username := c.MustGet("username").(string)
