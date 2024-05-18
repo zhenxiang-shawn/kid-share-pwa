@@ -43,6 +43,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -127,6 +128,7 @@ func loginHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username1 or password"})
 		return
 	}
+	fmt.Println("user:", user, "credential:", credentials)
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password1"})
@@ -147,6 +149,9 @@ func registerHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
+	if newUser.PasswordHash == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password cannot be empty"})
+	}
 
 	collection := mongoClient.Database("baby_diary").Collection("users")
 
@@ -160,6 +165,7 @@ func registerHandler(c *gin.Context) {
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.PasswordHash), bcrypt.DefaultCost)
+	fmt.Println("Checking password: ", passwordHash)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
 		return
