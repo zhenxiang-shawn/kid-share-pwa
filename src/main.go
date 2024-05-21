@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,6 +46,16 @@ type DiaryEntry struct {
 	Content    string    `json:"content" bson:"content"`
 	ImagePaths []string  `json:"image_paths,omitempty" bson:"image_paths,omitempty"`
 	Timestamp  time.Time `json:"timestamp" bson:"timestamp"`
+}
+
+type DiaryResponseData struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Ok      bool   `json:"ok"`
+	Data    struct {
+		Diaries []DiaryEntry `json:"diaries"`
+		Total   int          `json:"total"`
+	} `json:"data"`
 }
 
 type LoginResponseData struct {
@@ -289,21 +300,53 @@ func createDiaryEntry(c *gin.Context) {
 }
 
 func getDiaryEntries(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	skip := (page - 1) * limit
+
 	collection := mongoClient.Database("baby_diary").Collection("diary_entries")
-	cursor, err := collection.Find(context.TODO(), bson.M{})
+	filter := bson.M{}
+
+	var diaries []DiaryEntry
+	findOptions := options.Find()
+	findOptions.SetSkip(int64(skip))
+	findOptions.SetLimit(int64(limit))
+	findOptions.SetSort(bson.D{{"date", -1}}) // Sort by date in descending order
+
+	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch diary entries"})
 		return
 	}
 	defer cursor.Close(context.TODO())
 
-	var entries []DiaryEntry
-	if err := cursor.All(context.TODO(), &entries); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not decode diary entries"})
-		return
+	for cursor.Next(context.TODO()) {
+		var diary DiaryEntry
+		if err := cursor.Decode(&diary); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode diary entry"})
+			return
+		}
+		diaries = append(diaries, diary)
 	}
 
-	c.JSON(http.StatusOK, entries)
+	if err := cursor.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cursor error"})
+		return
+	}
+	total, err := collection.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "faied to count documents"})
+		return
+	}
+	response := DiaryResponseData{
+		Code:    http.StatusOK,
+		Message: fmt.Sprintf("Diary entries retrieved successfully"),
+		Ok:      true,
+	}
+	response.Data.Diaries = diaries
+	response.Data.Total = int(total)
+
+	c.JSON(http.StatusOK, response)
 }
 
 func authMiddleware(c *gin.Context) {
