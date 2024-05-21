@@ -65,6 +65,7 @@ type LoginResponseData struct {
 	Data    struct {
 		Token    string `json:"token"`
 		Username string `json:"username"`
+		DisplayName string `json:"display_name"`
 		Avatar   string `json:"avatar"`
 		Relation string `json:"relation"`
 	} `json:"data"`
@@ -106,9 +107,9 @@ func main() {
 	r := gin.Default()
 	apiGroup := r.Group("api")
 	{
-		apiGroup.POST("/login", loginHandler)
+		apiGroup.POST("/user/login", loginHandler)
 		apiGroup.GET("/user/:username", getUserInfo)
-		apiGroup.POST("/register", registerHandler)
+		apiGroup.POST("/user/register", registerHandler)
 		apiGroup.POST("/diary", authMiddleware, createDiaryEntry)
 		apiGroup.GET("/diaries", authMiddleware, getDiaryEntries)
 	}
@@ -158,6 +159,7 @@ func loginHandler(c *gin.Context) {
 		Ok:      true,
 	}
 	response.Data.Token = token
+	response.Data.DisplayName = user.DisplayName
 	c.JSON(http.StatusOK, response)
 
 }
