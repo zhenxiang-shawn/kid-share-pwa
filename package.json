@@ -1,0 +1,8 @@
+{
+	"dependencies": {
+		"axios": "^1.7.0"
+	},
+	"devDependencies": {
+		"unplugin-vue-components": "^0.27.0"
+	}
+}
