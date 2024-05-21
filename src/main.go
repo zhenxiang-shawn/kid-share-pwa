@@ -35,6 +35,7 @@ type User struct {
 	Password     string `json:"password" bson:"-"`
 	PasswordHash string `json:"-" bson:"password_hash"`
 	DisplayName  string `json:"display_name" bson:"display_name"`
+	Avatar       string `json:"avatar" bson:"avatar"`
 	Relation     string `json:"relation" bson:"relation"`
 }
 
@@ -44,6 +45,29 @@ type DiaryEntry struct {
 	Content    string    `json:"content" bson:"content"`
 	ImagePaths []string  `json:"image_paths,omitempty" bson:"image_paths,omitempty"`
 	Timestamp  time.Time `json:"timestamp" bson:"timestamp"`
+}
+
+type LoginResponseData struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Ok      bool   `json:"ok"`
+	Data    struct {
+		Token    string `json:"token"`
+		Username string `json:"username"`
+		Avatar   string `json:"avatar"`
+		Relation string `json:"relation"`
+	} `json:"data"`
+}
+
+type UserInfoResponseData struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Ok      bool   `json:"ok"`
+	Data    struct {
+		Name     string `json:"name"`
+		Avatar   string `json:"avatar"`
+		Relation string `json:"relation"`
+	} `json:"data"`
 }
 
 func main() {
@@ -69,13 +93,17 @@ func main() {
 
 	// Create Gin router
 	r := gin.Default()
-	r.POST("/login", loginHandler)
-	r.POST("/register", registerHandler)
-	r.POST("/diary", authMiddleware, createDiaryEntry)
-	r.GET("/diary", authMiddleware, getDiaryEntries)
+	apiGroup := r.Group("api")
+	{
+		apiGroup.POST("/login", loginHandler)
+		apiGroup.GET("/user/:username", getUserInfo)
+		apiGroup.POST("/register", registerHandler)
+		apiGroup.POST("/diary", authMiddleware, createDiaryEntry)
+		apiGroup.GET("/diaries", authMiddleware, getDiaryEntries)
+	}
 
 	// Serve uploaded images
-	r.Static("/uploads", imageUploadDir)
+	apiGroup.Static("/uploads", imageUploadDir)
 
 	err = r.Run(":8818")
 	if err != nil {
@@ -113,9 +141,37 @@ func loginHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
 		return
 	}
+	response := LoginResponseData{
+		Code:    http.StatusOK,
+		Message: fmt.Sprintf("Login successful"),
+		Ok:      true,
+	}
+	response.Data.Token = token
+	c.JSON(http.StatusOK, response)
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
 }
+
+func getUserInfo(c *gin.Context) {
+	//username := c.MustGet("username").(string)
+	username := c.Param("username")
+
+	collection := mongoClient.Database("baby_diary").Collection("users")
+	var user = User{}
+	err := collection.FindOne(context.TODO(), bson.M{"username": username}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error(), "ok": false})
+		return
+	}
+	var userInfo = UserInfoResponseData{}
+	userInfo.Ok = true
+	userInfo.Data.Avatar = user.Avatar
+	userInfo.Data.Name = user.DisplayName
+	userInfo.Data.Relation = user.Relation
+
+	c.JSON(http.StatusOK, userInfo)
+
+}
+
 func registerHandler(c *gin.Context) {
 	var newUser User
 	if err := c.BindJSON(&newUser); err != nil {
