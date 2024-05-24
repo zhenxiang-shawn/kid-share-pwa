@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -62,10 +63,11 @@ type LoginResponseData struct {
 	Message string `json:"message"`
 	Ok      bool   `json:"ok"`
 	Data    struct {
-		Token    string `json:"token"`
-		Username string `json:"username"`
-		Avatar   string `json:"avatar"`
-		Relation string `json:"relation"`
+		Token       string `json:"token"`
+		Username    string `json:"username"`
+		DisplayName string `json:"display_name"`
+		Avatar      string `json:"avatar"`
+		Relation    string `json:"relation"`
 	} `json:"data"`
 }
 
@@ -105,9 +107,9 @@ func main() {
 	r := gin.Default()
 	apiGroup := r.Group("api")
 	{
-		apiGroup.POST("/login", loginHandler)
+		apiGroup.POST("/user/login", loginHandler)
 		apiGroup.GET("/user/:username", getUserInfo)
-		apiGroup.POST("/register", registerHandler)
+		apiGroup.POST("/user/register", registerHandler)
 		apiGroup.POST("/diary", authMiddleware, createDiaryEntry)
 		apiGroup.GET("/diaries", authMiddleware, getDiaryEntries)
 	}
@@ -156,7 +158,9 @@ func loginHandler(c *gin.Context) {
 		Message: fmt.Sprintf("Login successful"),
 		Ok:      true,
 	}
+	response.Data.Username = user.Username
 	response.Data.Token = token
+	response.Data.DisplayName = user.DisplayName
 	c.JSON(http.StatusOK, response)
 
 }
@@ -246,11 +250,69 @@ func createDiaryEntry(c *gin.Context) {
 		collection := mongoClient.Database("baby_diary").Collection("diary_entries")
 		_, err := collection.InsertOne(context.TODO(), diaryEntry)
 		if err != nil {
+			c.JSON(http.StatusInternalServerError,
+				gin.H{
+					"code":    http.StatusInternalServerError,
+					"message": "Could not create diary entry",
+					"ok":      false,
+				})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code":    http.StatusOK,
+			"message": "Diary entry created successfully",
+			"ok":      true,
+		})
+	} else {
+		// 处理 multipart/form-data 请求
+		form, err := c.MultipartForm()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
+			return
+		}
+
+		files := form.File["images"]
+		if len(files) > 9 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Too many images, maximum is 9"})
+			return
+		}
+
+		var entry struct {
+			Content string `json:"content"`
+		}
+		entry.Content = form.Value["content"][0]
+
+		imagePaths := []string{}
+		for _, file := range files {
+			imageID := uuid.New().String()
+			imagePath := filepath.Join(imageUploadDir, imageID+"-"+file.Filename)
+			if err := c.SaveUploadedFile(file, imagePath); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+				return
+			}
+			imagePaths = append(imagePaths, imagePath)
+		}
+
+		diaryEntry := DiaryEntry{
+			ID:         uuid.New().String(),
+			Username:   username,
+			Content:    entry.Content,
+			ImagePaths: imagePaths,
+			Timestamp:  time.Now(),
+		}
+
+		collection := mongoClient.Database("baby_diary").Collection("diary_entries")
+		_, err = collection.InsertOne(context.TODO(), diaryEntry)
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
+		c.JSON(http.StatusOK, gin.H{
+			"code":    http.StatusInternalServerError,
+			"message": "Diary entry created successfully",
+			"ok":      true,
+		})
 	}
 	//} else {
 	//	// 处理 multipart/form-data 请求
