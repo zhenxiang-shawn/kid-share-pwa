@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -228,7 +227,8 @@ func createDiaryEntry(c *gin.Context) {
 	// 判断 Content-Type 是否是 application/json
 	if c.ContentType() == "application/json" {
 		var entry struct {
-			Content string `json:"content"`
+			Content    string   `json:"content"`
+			ImagePaths []string `json:"image_paths"`
 		}
 		if err := c.BindJSON(&entry); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -236,10 +236,11 @@ func createDiaryEntry(c *gin.Context) {
 		}
 
 		diaryEntry := DiaryEntry{
-			ID:        uuid.New().String(),
-			Username:  username,
-			Content:   entry.Content,
-			Timestamp: time.Now(),
+			ID:         uuid.New().String(),
+			Username:   username,
+			Content:    entry.Content,
+			ImagePaths: entry.ImagePaths,
+			Timestamp:  time.Now(),
 		}
 
 		collection := mongoClient.Database("baby_diary").Collection("diary_entries")
@@ -250,53 +251,54 @@ func createDiaryEntry(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
-	} else {
-		// 处理 multipart/form-data 请求
-		form, err := c.MultipartForm()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
-			return
-		}
-
-		files := form.File["images"]
-		if len(files) > 9 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Too many images, maximum is 9"})
-			return
-		}
-
-		var entry struct {
-			Content string `json:"content"`
-		}
-		entry.Content = form.Value["content"][0]
-
-		imagePaths := []string{}
-		for _, file := range files {
-			imageID := uuid.New().String()
-			imagePath := filepath.Join(imageUploadDir, imageID+"-"+file.Filename)
-			if err := c.SaveUploadedFile(file, imagePath); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-				return
-			}
-			imagePaths = append(imagePaths, imagePath)
-		}
-
-		diaryEntry := DiaryEntry{
-			ID:         uuid.New().String(),
-			Username:   username,
-			Content:    entry.Content,
-			ImagePaths: imagePaths,
-			Timestamp:  time.Now(),
-		}
-
-		collection := mongoClient.Database("baby_diary").Collection("diary_entries")
-		_, err = collection.InsertOne(context.TODO(), diaryEntry)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
 	}
+	//} else {
+	//	// 处理 multipart/form-data 请求
+	//	form, err := c.MultipartForm()
+	//	if err != nil {
+	//		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
+	//		return
+	//	}
+	//
+	//	files := form.File["images"]
+	//	if len(files) > 9 {
+	//		c.JSON(http.StatusBadRequest, gin.H{"error": "Too many images, maximum is 9"})
+	//		return
+	//	}
+	//
+	//	var entry struct {
+	//		Content string `json:"content"`
+	//	}
+	//	entry.Content = form.Value["content"][0]
+	//
+	//	imagePaths := []string{}
+	//	for _, file := range files {
+	//		imageID := uuid.New().String()
+	//		imagePath := filepath.Join(imageUploadDir, imageID+"-"+file.Filename)
+	//		if err := c.SaveUploadedFile(file, imagePath); err != nil {
+	//			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+	//			return
+	//		}
+	//		imagePaths = append(imagePaths, imagePath)
+	//	}
+	//
+	//	diaryEntry := DiaryEntry{
+	//		ID:         uuid.New().String(),
+	//		Username:   username,
+	//		Content:    entry.Content,
+	//		ImagePaths: imagePaths,
+	//		Timestamp:  time.Now(),
+	//	}
+	//
+	//	collection := mongoClient.Database("baby_diary").Collection("diary_entries")
+	//	_, err = collection.InsertOne(context.TODO(), diaryEntry)
+	//	if err != nil {
+	//		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
+	//		return
+	//	}
+	//
+	//	c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
+	//}
 }
 
 func getDiaryEntries(c *gin.Context) {
