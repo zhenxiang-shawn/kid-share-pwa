@@ -19,6 +19,11 @@ export const constRoute: Array<RouteRecordRaw> = [
         name: 'home',
       },
       {
+        path: '/post',
+        component: () => import('../views/posts/index.vue'),
+        name: 'post',
+      },
+      {
         path: '/my',
         component: () => import('../views/my/index.vue'),
         name: 'my',

@@ -1,13 +1,20 @@
 <script setup lang="ts" name="UserInfoBlock">
 import { showNotify } from 'vant'
 import useUserStore from '../store/modules/user'
+import { computed } from 'vue'
 
-let useUser = useUserStore()
+let userStore = useUserStore()
+let props = defineProps(['image_url'])
+let image_url = computed(() => {
+  return props.image_url == ''
+    ? props.image_url
+    : 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'
+})
 const logout = () => {
   // 需要向服务器发请求[退出登录接口]******
 
   // 仓库当中关于用于相关的数据清空[token|username|avatar]
-  useUser.resetUserInfo()
+  userStore.logout()
   window.location.reload() // TODO(dir to login page)
   // notification
   showNotify({ type: 'warning', message: '已登出' })
@@ -21,11 +28,11 @@ const logout = () => {
       <van-image
         round
         fit="cover"
-        src="https://img.yzcdn.cn/vant/cat.jpeg"
+        :src="image_url"
         width="5rem"
         height="5rem"
       ></van-image>
-      <span>UserName</span>
+      <span>{{ userStore.displayName }}</span>
     </div>
     <!-- avator -->
     <!-- user name -->

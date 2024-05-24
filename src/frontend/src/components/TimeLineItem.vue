@@ -1,20 +1,25 @@
 <script setup lang="ts" name="TimeLineItem">
 import { showImagePreview } from 'vant'
+import { computed } from 'vue'
 
 // get props from parent
 
 const props = defineProps({
   poster: String,
-  date: String,
+  timestamp: String,
+  content: String,
   title: String,
   images: Array<string>,
+})
+let date = computed(() => {
+  return props.timestamp?.slice(0, 10)
 })
 
 // auto set image columns
 const images = props.images as Array<string>
 let image_num = images ? images?.length : 0
 let image_columns = image_num >= 3 ? 3 : image_num
-console.log(`Image: ${image_num} col: ${image_columns}`)
+console.log(`Image: ${image_num} col: ${image_columns}, img_num: ${image_num}`)
 
 // open image preview
 const openImagePreview = (index: number) => {
@@ -45,27 +50,34 @@ const openImagePreview = (index: number) => {
 
       <!-- Content -->
       <div class="content">
-        <van-text-ellipsis content="Lorem ipsum dolor sit amet consectetur adipisicing elit. Quas, doloremque." :rows="3" :expand-text="'展开'" :collapse-text="'收起'"></van-text-ellipsis>
-        
+        <van-text-ellipsis
+          :content="content"
+          :rows="10"
+          :expand-text="'展开'"
+          :collapse-text="'收起'"
+        ></van-text-ellipsis>
+
         <!-- Images -->
-        <van-grid
-          square
-          :v-show="image_num != 0"
-          :column-num="image_columns"
-          class="images-grid"
-        >
-          <van-grid-item v-for="(item, index) in images" :key="index">
-            <van-image
-              :src="item"
-              fit="contain"
-              width="100%"
-              height="100%"
-              position="center"
-              @click="openImagePreview(index)"
-              :preview-src="{ src: item }"
-            />
-          </van-grid-item>
-        </van-grid>
+        <div>
+          <van-grid
+            square
+            :v-show="image_num != 0"
+            :column-num="image_columns"
+            class="images-grid"
+          >
+            <van-grid-item v-for="(item, index) in images" :key="index">
+              <van-image
+                :src="item"
+                fit="contain"
+                width="100%"
+                height="100%"
+                position="center"
+                @click="openImagePreview(index)"
+                :preview-src="{ src: item }"
+              />
+            </van-grid-item>
+          </van-grid>
+        </div>
       </div>
     </div>
   </div>
@@ -112,7 +124,6 @@ const openImagePreview = (index: number) => {
       van-text-ellipsis {
         justify-content: left;
       }
-
     }
   }
 }

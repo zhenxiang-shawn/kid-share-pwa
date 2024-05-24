@@ -3,39 +3,29 @@ import { ref } from 'vue'
 import { showNotify } from 'vant'
 import { useRoute, useRouter } from 'vue-router'
 import useUserStore from '../../store/modules/user'
+import pinia from '../../store'
 // import useUserStore from '@/store/modules/user'
 
 let username = ref<string>('test')
 let password = ref<string>('test111')
-let $route = useRoute()
 let $router = useRouter()
-let userStore = useUserStore()
+let $route = useRoute()
+let userStore = useUserStore(pinia)
 
 const onSubmit = async () => {
   console.log('submit', username, password)
   // TODO(zhenxiang@) validate the form
   try {
-    await userStore.login(username, password)
+    await userStore.login(username.value, password.value)
     //编程式导航跳转到展示数据首页
     //判断登录的时候,路由路径当中是否有query参数，如果有就往query参数挑战，没有跳转到首页
     let redirect: any = $route.query.redirect
     $router.push({ path: redirect || '/' })
-    //
+
     showNotify({ type: 'success', message: 'Login Success' })
   } catch (error) {
     showNotify({ type: 'danger', message: 'Login Failed' })
   }
-  // fake account
-  // if (username.value === 'visitor' && password.value === '111111') {
-  //   useUser.login('visitor')
-  //   showNotify({ type: 'success', message: 'Login Success' })
-  //   //编程式导航跳转到展示数据首页
-  //   //判断登录的时候,路由路径当中是否有query参数，如果有就往query参数挑战，没有跳转到首页
-  //   let redirect: any = $route.query.redirect
-  //   $router.push({ path: redirect || '/' })
-  // } else {
-  //   showNotify({ type: 'danger', message: '账户密码错误' })
-  // }
 }
 </script>
 

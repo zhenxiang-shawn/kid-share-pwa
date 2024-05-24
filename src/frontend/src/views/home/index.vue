@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { showToast } from 'vant'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import TimeLineItem from '../../components/TimeLineItem.vue'
+import useContentStore from '../../store/modules/content'
+import { useRouter } from 'vue-router'
 
 let loading = ref<boolean>(false)
 let finished = ref<boolean>(false)
-// let container = ref()
+let useContent = useContentStore()
+let $router = useRouter()
+
 const fake_images1 = [
   'https://images.unsplash.com/photo-1568572933382-74d440642117',
   'https://images.unsplash.com/photo-1534377125276-8d48c3f9c3d3',
@@ -26,12 +30,34 @@ const fake_images2 = [
   'https://source.unsplash.com/960x640/?landscape',
 ]
 
+const getContent = () => {
+  // load data from localStorage
+
+  // if there is no localstorage, request from server
+  try {
+    useContent.getContent()
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+const addPost = () => {
+  $router.push({
+    path: '/post',
+  })
+}
+
 const onRefresh = () => {
+  getContent()
   setTimeout(() => {
     loading.value = false
     showToast('刷新成功')
   }, 1000)
 }
+
+onMounted(() => {
+  getContent()
+})
 </script>
 
 <template>
@@ -47,24 +73,18 @@ const onRefresh = () => {
           :finished="finished"
           v-model="loading"
         >
-          <TimeLineItem poster="Apple" date="2024-03-01" title="mama" />
-
           <TimeLineItem
-            poster="二婶"
-            date="2024-03-02"
-            title="二婶"
-            :images="fake_images1"
-          />
-
-          <TimeLineItem
-            poster="小三姑"
-            date="2024-03-03"
-            title="三姑"
-            :images="fake_images2"
+            v-for="(item, index) in useContent.contents"
+            :key="item.id"
+            :content="item.content"
+            :poster="item.username"
+            :timestamp="item.timestamp"
+            :images="item.images"
           />
         </van-list>
       </div>
     </van-pull-refresh>
+    <van-floating-bubble icon="add" @click="addPost" />
   </div>
 </template>
 

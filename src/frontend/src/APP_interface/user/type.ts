@@ -11,7 +11,7 @@ export interface loginResponseData {
   data: {
     token: string
     username: string
-    displayName: string
+    display_name: string
     avatar: string
     relation: string
   }

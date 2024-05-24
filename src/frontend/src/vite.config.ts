@@ -13,8 +13,19 @@ export default defineConfig(({ command, mode }) => {
         '@': '/src', // 相对路径别名配置，使用 @ 代替 src
       },
     },
+    // server: {
+    //   host: '0.0.0.0',
+    //   port: 8818,
+    // },
     server: {
-      host: '0.0.0.0',
+      proxy: {
+        [env.VITE_APP_BASE_API]: {
+          // target: env.VITE_SERVE,
+          target: 'http://117.72.64.223:8818/',
+          changeOrigin: true,
+          // rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
       port: 8818,
     },
   }
