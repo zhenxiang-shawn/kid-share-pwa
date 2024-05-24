@@ -158,6 +158,7 @@ func loginHandler(c *gin.Context) {
 		Message: fmt.Sprintf("Login successful"),
 		Ok:      true,
 	}
+	response.Data.Username = user.Username
 	response.Data.Token = token
 	response.Data.DisplayName = user.DisplayName
 	c.JSON(http.StatusOK, response)
@@ -247,11 +248,19 @@ func createDiaryEntry(c *gin.Context) {
 		collection := mongoClient.Database("baby_diary").Collection("diary_entries")
 		_, err := collection.InsertOne(context.TODO(), diaryEntry)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
+			c.JSON(http.StatusInternalServerError,
+				gin.H{
+					"code": http.StatusInternalServerError,
+					"message": "Could not create diary entry",
+					"ok": false,
+				})
 			return
 		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
+c.JSON(http.StatusOK, gin.H{
+                                "code": http.StatusOK,
+                                "message": "Diary entry created successfully",
+                                "ok": true,
+                })
 	} else {
 		// 处理 multipart/form-data 请求
 		form, err := c.MultipartForm()
@@ -297,7 +306,11 @@ func createDiaryEntry(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
+		c.JSON(http.StatusOK, gin.H{
+                                "code": http.StatusInternalServerError,
+                                "message": "Diary entry created successfully",
+                                "ok": true,
+                })
 	}
 }
 
