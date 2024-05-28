@@ -8,6 +8,7 @@ export interface diaryData {
 export interface diariesResponseData {
   data: {
     diaries: diaryData[]
+    total: number
   }
   code: number
   message: string

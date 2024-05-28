@@ -6,7 +6,6 @@ import {
   GET_USER_DISPLAY_NAME,
   GET_USER_NAME,
   SET_USER_INFO,
-  SET_USER_NAME,
 } from '../../utils/user'
 
 const useUserStore = defineStore('User', {

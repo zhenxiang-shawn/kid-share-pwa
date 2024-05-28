@@ -9,4 +9,5 @@ export interface TimelineItemState {
 
 export interface ContentState {
   contents: TimelineItemState[] //
+  contentsNum: number
 }

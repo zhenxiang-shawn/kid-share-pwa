@@ -9,14 +9,13 @@ import type { userInfoReponseData } from '../APP_interface/user/type'
 const userStore = useUserStore(pinia)
 
 router.beforeEach(async (to: any, from: any, next: any) => {
-  console.log('before each')
   // update page title
 
   // get token
   const user_token = userStore.token as string
-  console.log('grab token: ', user_token)
+  // console.log('grab token: ', user_token)
   const username = userStore.username as string
-  console.log('grab username: ', username)
+  // console.log('grab username: ', username)
   if (user_token) {
     if (to.path == '/login') {
       next({ path: '/' })
