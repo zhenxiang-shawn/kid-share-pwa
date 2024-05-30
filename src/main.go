@@ -109,8 +109,10 @@ func main() {
 	{
 		apiGroup.POST("/user/login", loginHandler)
 		apiGroup.GET("/user/:username", getUserInfo)
+		apiGroup.PUT("/user/:username", authMiddleware, updateUserInfo)
 		apiGroup.POST("/user/register", registerHandler)
 		apiGroup.POST("/diary", authMiddleware, createDiaryEntry)
+		apiGroup.DELETE("/diary/:id", authMiddleware, deleteDiaryEntry)
 		apiGroup.GET("/diaries", authMiddleware, getDiaryEntries)
 	}
 
@@ -184,6 +186,49 @@ func getUserInfo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, userInfo)
 
+}
+
+func updateUserInfo(c *gin.Context) {
+	username := c.Param("username")
+	authUsername := c.MustGet("username").(string)
+
+	// Ensure the authenticated user is the same as the user being updated
+	if username != authUsername {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You can only update your own information"})
+		return
+	}
+
+	var updatedUser struct {
+		DisplayName string `json:"display_name"`
+		Avatar      string `json:"avatar"`
+		Relation    string `json:"relation"`
+	}
+
+	if err := c.BindJSON(&updatedUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	collection := mongoClient.Database("baby_diary").Collection("users")
+	update := bson.M{
+		"$set": bson.M{
+			"display_name": updatedUser.DisplayName,
+			"avatar":       updatedUser.Avatar,
+			"relation":     updatedUser.Relation,
+		},
+	}
+
+	_, err := collection.UpdateOne(context.TODO(), bson.M{"username": username}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update user info"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"message": "User info updated successfully",
+		"ok":      true,
+	})
 }
 
 func registerHandler(c *gin.Context) {
@@ -314,53 +359,31 @@ func createDiaryEntry(c *gin.Context) {
 			"ok":      true,
 		})
 	}
-	//} else {
-	//	// 处理 multipart/form-data 请求
-	//	form, err := c.MultipartForm()
-	//	if err != nil {
-	//		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
-	//		return
-	//	}
-	//
-	//	files := form.File["images"]
-	//	if len(files) > 9 {
-	//		c.JSON(http.StatusBadRequest, gin.H{"error": "Too many images, maximum is 9"})
-	//		return
-	//	}
-	//
-	//	var entry struct {
-	//		Content string `json:"content"`
-	//	}
-	//	entry.Content = form.Value["content"][0]
-	//
-	//	imagePaths := []string{}
-	//	for _, file := range files {
-	//		imageID := uuid.New().String()
-	//		imagePath := filepath.Join(imageUploadDir, imageID+"-"+file.Filename)
-	//		if err := c.SaveUploadedFile(file, imagePath); err != nil {
-	//			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-	//			return
-	//		}
-	//		imagePaths = append(imagePaths, imagePath)
-	//	}
-	//
-	//	diaryEntry := DiaryEntry{
-	//		ID:         uuid.New().String(),
-	//		Username:   username,
-	//		Content:    entry.Content,
-	//		ImagePaths: imagePaths,
-	//		Timestamp:  time.Now(),
-	//	}
-	//
-	//	collection := mongoClient.Database("baby_diary").Collection("diary_entries")
-	//	_, err = collection.InsertOne(context.TODO(), diaryEntry)
-	//	if err != nil {
-	//		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create diary entry"})
-	//		return
-	//	}
-	//
-	//	c.JSON(http.StatusOK, gin.H{"message": "Diary entry created successfully"})
-	//}
+}
+
+func deleteDiaryEntry(c *gin.Context) {
+	diaryID := c.Param("id")
+	username := c.MustGet("username").(string)
+
+	collection := mongoClient.Database("baby_diary").Collection("diary_entries")
+	filter := bson.M{"id": diaryID, "username": username}
+
+	result, err := collection.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not delete diary entry"})
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Diary entry not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"message": "Diary entry deleted successfully",
+		"ok":      true,
+	})
 }
 
 func getDiaryEntries(c *gin.Context) {
