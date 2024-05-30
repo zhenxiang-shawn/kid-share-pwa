@@ -398,7 +398,7 @@ func getDiaryEntries(c *gin.Context) {
 	findOptions := options.Find()
 	findOptions.SetSkip(int64(skip))
 	findOptions.SetLimit(int64(limit))
-	findOptions.SetSort(bson.D{{"date", -1}}) // Sort by date in descending order
+	findOptions.SetSort(bson.D{{"timestamp", -1}}) // Sort by date in descending order
 
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
