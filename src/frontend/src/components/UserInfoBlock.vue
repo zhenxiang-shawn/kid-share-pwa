@@ -24,7 +24,7 @@ const logout = () => {
 <template>
   <div class="user-info-block">
     <!-- Personal Information -->
-    <div class="user-info-area">
+    <div class="user-info-area" @click="$router.push('/my/info')">
       <van-image
         round
         fit="cover"

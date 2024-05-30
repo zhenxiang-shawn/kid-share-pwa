@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { showToast } from 'vant'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import TimeLineItem from '../../components/TimeLineItem.vue'
 import useContentStore, {
   CLEAR_LOCAL_CONTENT,
@@ -11,7 +11,10 @@ let pageNumber = 1
 const pageLimit = 20
 let loading = ref<boolean>(false)
 let finished = ref<boolean>(false)
+
 let useContent = useContentStore()
+// TODO(zhenxiang@) 修复响应式数据更新问题
+let contents = computed(() => useContent.contents)
 let $router = useRouter()
 
 const getContent = async (initial: boolean = false) => {
@@ -97,10 +100,11 @@ watch(
         finished-text="没有更多了"
         :finished="finished"
         v-model="loading"
+        v-model:content="contents"
         @load="onLoad"
       >
         <TimeLineItem
-          v-for="(item, index) in useContent.contents"
+          v-for="(item, index) in contents"
           :key="item.id"
           :content="item.content"
           :poster="item.username"

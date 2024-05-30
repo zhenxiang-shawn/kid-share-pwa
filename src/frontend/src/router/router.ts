@@ -28,11 +28,17 @@ export const constRoute: Array<RouteRecordRaw> = [
         component: () => import('../views/my/index.vue'),
         name: 'my',
       },
+
       {
         path: '/404',
         component: () => import('../views/404/index.vue'),
         name: '404',
       },
     ],
+  },
+  {
+    path: '/my/info',
+    component: () => import('../views/update_user_info/index.vue'),
+    name: 'update_user_info',
   },
 ]
